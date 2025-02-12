@@ -9,8 +9,8 @@ pipeline {
 
     stages {
         stage('Checkout Repository') {
-            cleanWs() 
             steps {
+            cleanWs() 
                 script {
                     checkout scm: [
                         $class: 'GitSCM',
