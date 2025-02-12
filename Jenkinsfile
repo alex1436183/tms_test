@@ -50,7 +50,7 @@ pipeline {
                 emailext subject: "Jenkins Report: File List",
                           body: "Прикреплен отчет о файлах в репозитории.",
                           attachmentsPattern: env.REPORT_FILE,
-                          to: 'dnsoika@gmail.com'
+                          to: 'alex1436183@gmail.com'
             }
         }
     }
