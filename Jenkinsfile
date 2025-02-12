@@ -2,7 +2,8 @@ pipeline {
     agent any
 
     environment {
-        REPO_URL = 'https://github.com/alex1436183/tms_test'
+        REPO_URL = 'https://github.com/alex1436183/tms_test.git'
+        BRANCH_NAME = 'main'  // Указываем нужную ветку (например, 'main')
         REPORT_FILE = 'report.html'
     }
 
@@ -10,8 +11,12 @@ pipeline {
         stage('Checkout Repository') {
             steps {
                 script {
-                    // Клонирование репозитория
-                    checkout scm: [$class: 'GitSCM', userRemoteConfigs: [[url: env.REPO_URL]]]
+                    // Клонирование репозитория с указанием ветки
+                    checkout scm: [
+                        $class: 'GitSCM',
+                        userRemoteConfigs: [[url: env.REPO_URL]],
+                        branches: [[name: "*/${env.BRANCH_NAME}"]]
+                    ]
                 }
             }
         }
