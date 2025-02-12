@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         REPO_URL = 'https://github.com/alex1436183/tms_test.git'
-        BRANCH_NAME = 'main'  // Указываем нужную ветку (например, 'main')
+        BRANCH_NAME = 'main'  
         REPORT_FILE = 'report.html'
     }
 
@@ -11,7 +11,6 @@ pipeline {
         stage('Checkout Repository') {
             steps {
                 script {
-                    // Клонирование репозитория с указанием ветки
                     checkout scm: [
                         $class: 'GitSCM',
                         userRemoteConfigs: [[url: env.REPO_URL]],
@@ -49,7 +48,6 @@ pipeline {
             steps {
                 emailext subject: "Jenkins Report: File List",
                           body: "Прикреплен отчет о файлах в репозитории.",
-                          attachLog: true,
                           attachmentsPattern: env.REPORT_FILE,
                           to: 'alex1436183@gmail.com'
             }
