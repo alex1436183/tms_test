@@ -4,15 +4,31 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                cleanWs()
-                checkout scm
+                git 'https://github.com/alex1436183/MyRepository.git'  // Репозиторий, из которого будет загружаться код
             }
         }
-
-        stage('Check Files') {
+        stage('Run Script') {
             steps {
-                sh 'ls -la'
+                script {
+                    // Запуск твоего Python скрипта
+                    sh 'python tiner.py'
+                }
             }
+        }
+    }
+
+    post {
+        always {
+            // Это всегда будет выполняться после выполнения пайплайна (например, для очистки)
+            echo 'Build finished'
+        }
+        success {
+            // Сообщение при успешной сборке
+            echo 'Build was successful!'
+        }
+        failure {
+            // Сообщение при ошибке сборки
+            echo 'Build failed!'
         }
     }
 }
