@@ -2,6 +2,7 @@ pipeline {
     agent any
 
     environment {
+        cleanWs() 
         REPO_URL = 'https://github.com/alex1436183/tms_test.git'
         BRANCH_NAME = 'main'  
         REPORT_FILE = 'report.html'
