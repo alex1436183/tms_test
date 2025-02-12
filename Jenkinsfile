@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        REPO_URL = 'https://github.com/alex1436183/tms_test.git'
+        REPO_URL = 'https://github.com/alex1436183/tms_test'
         REPORT_FILE = 'report.html'
     }
 
