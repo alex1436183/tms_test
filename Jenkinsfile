@@ -1,19 +1,53 @@
 pipeline {
     agent any
 
+    environment {
+        REPO_URL = 'https://github.com/alex1436183/tms_test.git'
+        REPORT_FILE = 'report.html'
+    }
+
     stages {
-        stage('Checkout') {
+        stage('Checkout Repository') {
             steps {
-                cleanWs()
-                checkout scm
+                script {
+                    // Клонирование репозитория
+                    checkout scm: [$class: 'GitSCM', userRemoteConfigs: [[url: env.REPO_URL]]]
+                }
             }
         }
 
-        stage('Check Files') {
+        stage('Generate File List Report') {
             steps {
-                sh 'ls -la'
+                script {
+                    def fileList = sh(script: 'ls -lh', returnStdout: true).trim()
+                    def reportContent = """
+                        <html>
+                        <head><title>File List Report</title></head>
+                        <body>
+                            <h2>Список файлов репозитория:</h2>
+                            <pre>${fileList}</pre>
+                        </body>
+                        </html>
+                    """
+                    writeFile file: env.REPORT_FILE, text: reportContent
+                }
+            }
+        }
+
+        stage('Archive Report') {
+            steps {
+                archiveArtifacts artifacts: env.REPORT_FILE, fingerprint: true
+            }
+        }
+
+        stage('Send Email') {
+            steps {
+                emailext subject: "Jenkins Report: File List",
+                          body: "Прикреплен отчет о файлах в репозитории.",
+                          attachLog: true,
+                          attachmentsPattern: env.REPORT_FILE,
+                          to: 'alex1436183@gmail.com'
             }
         }
     }
 }
-
