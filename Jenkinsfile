@@ -117,4 +117,10 @@ pipeline {
             '''
         }
         failure {
-            echo '❌ Pipeline 
+            echo '❌ Pipeline failed! Check logs for details.'
+        }
+        success {
+            echo '✅ Pipeline completed successfully!'
+        }
+    }
+}
