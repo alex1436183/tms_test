@@ -56,10 +56,17 @@ pipeline {
             steps {
                 sh '''#!/bin/bash
                 echo "Waiting for application to start..."
-                sleep 5
+                sleep 10  # Увеличиваем время ожидания для запуска приложения
                 echo "Checking application at http://localhost:8080"
                 curl -v http://localhost:8080 || echo "Application check failed!"
                 '''
+            }
+        }
+
+        stage('Keep Application Running') {
+            steps {
+                echo "Application should now be running, waiting for manual intervention to end pipeline."
+                input message: 'Press "Proceed" to stop the pipeline and leave the app running.'
             }
         }
     }
