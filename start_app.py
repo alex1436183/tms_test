@@ -12,14 +12,12 @@ def start_application():
         sys.exit(1)
 
     # Путь к активации виртуального окружения и запуску приложения
-    activate_venv = os.path.join(venv_dir, 'bin', 'activate_this.py')
+    activate_venv = os.path.join(venv_dir, 'bin', 'activate')
     app_command = f"python {os.path.join(deploy_dir, 'app.py')}"
 
     try:
-        # Активация виртуального окружения
-        subprocess.run([sys.executable, activate_venv], check=True)
-        # Запуск приложения в фоновом режиме
-        subprocess.Popen(app_command, shell=True, cwd=deploy_dir)
+        # Активация виртуального окружения и запуск приложения
+        subprocess.run(f"source {activate_venv} && {app_command}", shell=True, cwd=deploy_dir, check=True)
         print(f"Application started in the background at {deploy_dir}")
     except subprocess.CalledProcessError as e:
         print(f"Error starting the application: {e}")
