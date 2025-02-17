@@ -24,7 +24,7 @@ pipeline {
                 sh '''#!/bin/bash
                 echo "Setting up Python virtual environment..."
                 python3 -m venv ${VENV_DIR}  // Создаём виртуальное окружение
-                source ${VENV_DIR}/bin/activate  // Активируем виртуальное окружение
+                . ${VENV_DIR}/bin/activate  // Активируем виртуальное окружение с помощью точки
                 python --version  // Проверяем версию Python
                 pip install --upgrade pip  // Обновляем pip
                 echo "Installing Flask..."
@@ -40,7 +40,7 @@ pipeline {
             steps {
                 sh '''#!/bin/bash
                 echo "Running tests..."
-                source ${VENV_DIR}/bin/activate  // Активируем виртуальное окружение
+                . ${VENV_DIR}/bin/activate  // Активируем виртуальное окружение
                 pytest tests/ --maxfail=1 --disable-warnings || echo "Tests failed!"  // Запускаем тесты
                 echo "Tests completed."
                 '''
@@ -81,7 +81,7 @@ pipeline {
                         export DEPLOY_DIR=${DEPLOY_DIR} && 
                         export VENV_DIR=${VENV_DIR} && 
                         cd ${DEPLOY_DIR} && 
-                        source ${VENV_DIR}/bin/activate && 
+                        . ${VENV_DIR}/bin/activate &&  # Используем точку вместо source для активации виртуального окружения
                         python ${DEPLOY_DIR}/start_app.py"  // Запускаем приложение
                     echo "Application started on ${DEPLOY_SERVER}."
                     '''
@@ -117,10 +117,4 @@ pipeline {
             '''
         }
         failure {
-            echo '❌ Pipeline failed! Check logs for details.'
-        }
-        success {
-            echo '✅ Pipeline completed successfully!'
-        }
-    }
-}
+            echo '❌ Pipeline 
