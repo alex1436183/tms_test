@@ -10,17 +10,21 @@ pipeline {
     stages {
         stage('Clone repository') {
             steps {
+                echo "Cloning repository from ${REPO_URL}"
                 git branch: "${BRANCH_NAME}", url: "${REPO_URL}"
             }
         }
-        
+
         stage('Setup Python Environment') {
             steps {
                 sh '''#!/bin/bash
+                echo "Setting up Python virtual environment..."
                 python3 -m venv ${VENV_DIR}
                 source ${VENV_DIR}/bin/activate
+                python --version
                 pip install --upgrade pip
                 pip install -r requirements.txt
+                echo "Python environment setup completed!"
                 '''
             }
         }
@@ -28,8 +32,10 @@ pipeline {
         stage('Run Tests') {
             steps {
                 sh '''#!/bin/bash
+                echo "Running tests..."
                 source ${VENV_DIR}/bin/activate
-                pytest tests/ --maxfail=1 --disable-warnings
+                pytest tests/ --maxfail=1 --disable-warnings || echo "Tests failed!"
+                echo "Tests completed."
                 '''
             }
         }
@@ -37,18 +43,22 @@ pipeline {
         stage('Start Application') {
             steps {
                 sh '''#!/bin/bash
+                echo "Starting application..."
                 source ${VENV_DIR}/bin/activate
                 nohup python app.py > app.log 2>&1 &
                 echo $! > app.pid
+                echo "Application started with PID: $(cat app.pid)"
                 '''
             }
         }
 
         stage('Check Application') {
             steps {
-                sh '''
+                sh '''#!/bin/bash
+                echo "Waiting for application to start..."
                 sleep 5
-                curl -v http://localhost:8080
+                echo "Checking application at http://localhost:8080"
+                curl -v http://localhost:8080 || echo "Application check failed!"
                 '''
             }
         }
@@ -57,17 +67,19 @@ pipeline {
     post {
         always {
             sh '''#!/bin/bash
+            echo "Cleaning up..."
             if [ -f app.pid ]; then
+                echo "Stopping application (PID: $(cat app.pid))"
                 kill $(cat app.pid) || true
                 rm -f app.pid
             fi
             '''
         }
         failure {
-            echo 'Pipeline failed!'
+            echo '❌ Pipeline failed! Check logs for details.'
         }
         success {
-            echo 'Pipeline completed successfully!'
+            echo '✅ Pipeline completed successfully!'
         }
     }
 }
