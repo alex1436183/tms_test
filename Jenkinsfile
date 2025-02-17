@@ -81,8 +81,8 @@ pipeline {
                     ssh -i "$SSH_KEY" jenkins@${DEPLOY_SERVER} "
                         cd ${DEPLOY_DIR} &&
                         source ${VENV_DIR}/bin/activate &&
-                        nohup python app.py > app.log 2>&1 & 
-                        disown
+                        python app.py > app.log 2>&1 &
+                        exit
                     "
                     echo "Application started on ${DEPLOY_SERVER} in the background."
                     '''
