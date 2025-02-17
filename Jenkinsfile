@@ -4,8 +4,8 @@ pipeline {
     environment {
         REPO_URL = 'https://github.com/alex1436183/tms_test.git'
         BRANCH_NAME = 'main'
-        VENV_DIR = 'venv'
-        DEPLOY_DIR = '/var/www/myapp'  // Указываем путь для деплоя на сервере
+        VENV_DIR = 'venv'  // Путь к виртуальному окружению
+        DEPLOY_DIR = '/var/www/myapp'  // Путь для деплоя
         DEPLOY_SERVER = 'minion'  // Имя или адрес сервера
         SSH_CREDENTIALS_ID = 'agent-ssh-key'  // ID SSH-учетных данных в Jenkins
     }
@@ -72,19 +72,18 @@ pipeline {
             }
         }
 
-        // Этап для запуска приложения **после деплоя**
         stage('Start Application') {
             steps {
                 withCredentials([sshUserPrivateKey(credentialsId: 'agent-ssh-key', keyFileVariable: 'SSH_KEY')]) {
                     sh '''#!/bin/bash
-                    echo "Starting application on the minion server..."
+                    echo "Running the Python script to start the application on the minion server..."
                     ssh -i "$SSH_KEY" jenkins@${DEPLOY_SERVER} "
-                        cd ${DEPLOY_DIR} &&
-                        source ${VENV_DIR}/bin/activate &&
-                        python app.py > app.log 2>&1 &
-                        exit
-                    "
-                    echo "Application started on ${DEPLOY_SERVER} in the background."
+                        export DEPLOY_DIR=${DEPLOY_DIR} && 
+                        export VENV_DIR=${VENV_DIR} && 
+                        cd ${DEPLOY_DIR} && 
+                        source ${VENV_DIR}/bin/activate && 
+                        python start_app.py"
+                    echo "Application started on ${DEPLOY_SERVER}."
                     '''
                 }
             }
