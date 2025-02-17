@@ -65,13 +65,6 @@ pipeline {
                 '''
             }
         }
-
-        stage('Keep Application Running') {
-            steps {
-                echo "Application should now be running, waiting for manual intervention to end pipeline."
-                input message: 'Press "Proceed" to stop the pipeline and leave the app running.'
-            }
-        }
     }
 
     post {
