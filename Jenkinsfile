@@ -78,8 +78,13 @@ pipeline {
                 withCredentials([sshUserPrivateKey(credentialsId: 'agent-ssh-key', keyFileVariable: 'SSH_KEY')]) {
                     sh '''#!/bin/bash
                     echo "Starting application on the minion server..."
-                    ssh -i "$SSH_KEY" jenkins@${DEPLOY_SERVER} "cd ${DEPLOY_DIR} && source ${VENV_DIR}/bin/activate && nohup python app.py > app.log 2>&1 &"
-                    echo "Application started on ${DEPLOY_SERVER}"
+                    ssh -i "$SSH_KEY" jenkins@${DEPLOY_SERVER} "
+                        cd ${DEPLOY_DIR} &&
+                        source ${VENV_DIR}/bin/activate &&
+                        nohup python app.py > app.log 2>&1 & 
+                        disown
+                    "
+                    echo "Application started on ${DEPLOY_SERVER} in the background."
                     '''
                 }
             }
