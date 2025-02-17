@@ -10,6 +10,7 @@ pipeline {
     stages {
         stage('Clone repository') {
             steps {
+                cleanWs()
                 echo "Cloning repository from ${REPO_URL}"
                 git branch: "${BRANCH_NAME}", url: "${REPO_URL}"
             }
