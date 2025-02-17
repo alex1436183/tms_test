@@ -47,30 +47,6 @@ pipeline {
             }
         }
 
-        stage('Start Application') {
-            steps {
-                sh '''#!/bin/bash
-                echo "Starting application..."
-                source ${VENV_DIR}/bin/activate
-                nohup python app.py > app.log 2>&1 &
-                echo $! > app.pid
-                echo "Application started with PID: $(cat app.pid)"
-                '''
-            }
-        }
-
-        stage('Check Application') {
-            steps {
-                sh '''#!/bin/bash
-                echo "Waiting for application to start..."
-                sleep 10  # Увеличиваем время ожидания для запуска приложения
-                echo "Checking application at http://localhost:8080"
-                curl -v http://localhost:8080 || echo "Application check failed!"
-                '''
-            }
-        }
-
-        // Этап создания директории на сервере
         stage('Create Directory for Deployment') {
             steps {
                 withCredentials([sshUserPrivateKey(credentialsId: 'agent-ssh-key', keyFileVariable: 'SSH_KEY')]) {
@@ -83,7 +59,6 @@ pipeline {
             }
         }
 
-        // Этап деплоя (копирование файлов через SCP)
         stage('Deploy') {
             steps {
                 withCredentials([sshUserPrivateKey(credentialsId: 'agent-ssh-key', keyFileVariable: 'SSH_KEY')]) {
@@ -96,16 +71,40 @@ pipeline {
                 }
             }
         }
+
+        // Этап для запуска приложения **после деплоя**
+        stage('Start Application') {
+            steps {
+                withCredentials([sshUserPrivateKey(credentialsId: 'agent-ssh-key', keyFileVariable: 'SSH_KEY')]) {
+                    sh '''#!/bin/bash
+                    echo "Starting application on the minion server..."
+                    ssh -i "$SSH_KEY" jenkins@${DEPLOY_SERVER} "cd ${DEPLOY_DIR} && source ${VENV_DIR}/bin/activate && nohup python app.py > app.log 2>&1 &"
+                    echo "Application started on ${DEPLOY_SERVER}"
+                    '''
+                }
+            }
+        }
+
+        stage('Check Application') {
+            steps {
+                sh '''#!/bin/bash
+                echo "Waiting for application to start..."
+                sleep 10  # Подождать некоторое время для запуска приложения
+                echo "Checking application at http://localhost:8080"
+                curl -v http://localhost:8080 || echo "Application check failed!"
+                '''
+            }
+        }
     }
 
     post {
         always {
             sh '''#!/bin/bash
             echo "Cleaning up..."
-            if [ -f app.pid ]; then
-                echo "Stopping application (PID: $(cat app.pid))"
-                kill $(cat app.pid) || true
-                rm -f app.pid
+            if [ -f ${DEPLOY_DIR}/app.pid ]; then
+                echo "Stopping application (PID: $(cat ${DEPLOY_DIR}/app.pid))"
+                kill $(cat ${DEPLOY_DIR}/app.pid) || true
+                rm -f ${DEPLOY_DIR}/app.pid
             fi
             echo "Cleaning up virtual environment..."
             rm -rf ${VENV_DIR}
