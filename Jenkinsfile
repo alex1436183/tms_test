@@ -5,6 +5,9 @@ pipeline {
         REPO_URL = 'https://github.com/alex1436183/tms_test.git'
         BRANCH_NAME = 'main'
         VENV_DIR = 'venv'
+        DEPLOY_DIR = '/var/www/myapp'  // Указываем путь для деплоя на сервере
+        DEPLOY_SERVER = 'minion'  // Имя или адрес сервера
+        SSH_CREDENTIALS_ID = 'agent-ssh-key'  // ID SSH-учетных данных в Jenkins
     }
 
     stages {
@@ -64,6 +67,33 @@ pipeline {
                 echo "Checking application at http://localhost:8080"
                 curl -v http://localhost:8080 || echo "Application check failed!"
                 '''
+            }
+        }
+
+        // Этап создания директории на сервере
+        stage('Create Directory for Deployment') {
+            steps {
+                withCredentials([sshUserPrivateKey(credentialsId: 'agent-ssh-key', keyFileVariable: 'SSH_KEY')]) {
+                    sh '''#!/bin/bash
+                    echo "Creating deployment directory on the minion server..."
+                    ssh -i "$SSH_KEY" jenkins@${DEPLOY_SERVER} "mkdir -p ${DEPLOY_DIR}"
+                    echo "Deployment directory created at ${DEPLOY_DIR}"
+                    '''
+                }
+            }
+        }
+
+        // Этап деплоя (копирование файлов через SCP)
+        stage('Deploy') {
+            steps {
+                withCredentials([sshUserPrivateKey(credentialsId: 'agent-ssh-key', keyFileVariable: 'SSH_KEY')]) {
+                    sh '''#!/bin/bash
+                    echo "Deploying project files to ${DEPLOY_SERVER}..."
+                    # Копируем файлы на сервер с помощью SCP
+                    scp -i "$SSH_KEY" -r * jenkins@${DEPLOY_SERVER}:${DEPLOY_DIR}
+                    echo "Deployment completed!"
+                    '''
+                }
             }
         }
     }
