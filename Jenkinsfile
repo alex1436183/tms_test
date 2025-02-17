@@ -24,7 +24,9 @@ pipeline {
                 source ${VENV_DIR}/bin/activate
                 python --version
                 pip install --upgrade pip
-                pip install -r requirements.txt
+                pip install -r requirements.txt  # Установка зависимостей из файла, если он есть
+                echo "Installing Flask..."
+                pip install Flask  # Устанавливаем Flask, если он не в requirements.txt
                 echo "Python environment setup completed!"
                 '''
             }
@@ -81,6 +83,8 @@ pipeline {
                 kill $(cat app.pid) || true
                 rm -f app.pid
             fi
+            echo "Cleaning up virtual environment..."
+            rm -rf ${VENV_DIR}
             '''
         }
         failure {
