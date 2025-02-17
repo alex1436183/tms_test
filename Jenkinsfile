@@ -1,57 +1,73 @@
 pipeline {
-    agent any
+    agent { label 'minion' }  // Выполняем на агенте с меткой 'minion'
 
     environment {
         REPO_URL = 'https://github.com/alex1436183/tms_test.git'
-        BRANCH_NAME = 'main'  
-        REPORT_FILE = 'report.html'
+        BRANCH_NAME = 'main'
+        VENV_DIR = 'venv'
     }
 
     stages {
-        stage('Checkout Repository') {
+        stage('Clone repository') {
             steps {
-            cleanWs() 
-                script {
-                    checkout scm: [
-                        $class: 'GitSCM',
-                        userRemoteConfigs: [[url: env.REPO_URL]],
-                        branches: [[name: "*/${env.BRANCH_NAME}"]]
-                    ]
-                }
+                git branch: "${BRANCH_NAME}", url: "${REPO_URL}"
+            }
+        }
+        
+        stage('Setup Python Environment') {
+            steps {
+                sh '''
+                python3 -m venv ${VENV_DIR}
+                source ${VENV_DIR}/bin/activate
+                pip install --upgrade pip
+                pip install -r requirements.txt
+                '''
             }
         }
 
-        stage('Generate File List Report') {
+        stage('Run Tests') {
             steps {
-                script {
-                    def fileList = sh(script: 'ls -lh', returnStdout: true).trim()
-                    def reportContent = """
-                        <html>
-                        <head><title>File List Report</title></head>
-                        <body>
-                            <h2>Список файлов репозитория:</h2>
-                            <pre>${fileList}</pre>
-                        </body>
-                        </html>
-                    """
-                    writeFile file: env.REPORT_FILE, text: reportContent
-                }
+                sh '''
+                source ${VENV_DIR}/bin/activate
+                pytest tests/ --maxfail=1 --disable-warnings
+                '''
             }
         }
 
-        stage('Archive Report') {
+        stage('Start Application') {
             steps {
-                archiveArtifacts artifacts: env.REPORT_FILE, fingerprint: true
+                sh '''
+                source ${VENV_DIR}/bin/activate
+                nohup python app.py > app.log 2>&1 &
+                echo $! > app.pid
+                '''
             }
         }
 
-        stage('Send Email') {
+        stage('Check Application') {
             steps {
-                emailext subject: "Jenkins Report: File List",
-                          body: "Прикреплен отчет о файлах в репозитории.",
-                          attachmentsPattern: env.REPORT_FILE,
-                          to: 'alex1436183@gmail.com'
+                sh '''
+                sleep 5
+                curl -v http://localhost:8080
+                '''
             }
+        }
+    }
+
+    post {
+        always {
+            sh '''
+            if [ -f app.pid ]; then
+                kill $(cat app.pid) || true
+                rm -f app.pid
+            fi
+            '''
+        }
+        failure {
+            echo 'Pipeline failed!'
+        }
+        success {
+            echo 'Pipeline completed successfully!'
         }
     }
 }
