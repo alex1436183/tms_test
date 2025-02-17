@@ -1,5 +1,9 @@
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+
 import pytest
-from app import app
+from app import app  # Импортируем приложение Flask
 
 @pytest.fixture
 def client():
@@ -8,7 +12,5 @@ def client():
 
 def test_home_page(client):
     response = client.get('/')
-    # Проверяем, что статус ответа 200 (OK)
     assert response.status_code == 200
-    # Проверяем, что в ответе содержится строка "Information"
     assert b"Information" in response.data
