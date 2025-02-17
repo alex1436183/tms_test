@@ -81,7 +81,7 @@ pipeline {
                         export DEPLOY_DIR=${DEPLOY_DIR} && 
                         export VENV_DIR=${VENV_DIR} && 
                         cd ${DEPLOY_DIR} && 
-                        bash -c 'source ${VENV_DIR}/bin/activate && python ${DEPLOY_DIR}/start_app.py'"  // Используем bash для активации виртуального окружения
+                        bash -c '. ${VENV_DIR}/bin/activate && python ${DEPLOY_DIR}/start_app.py'"  // Запускаем приложение
                     echo "Application started on ${DEPLOY_SERVER}."
                     '''
                 }
@@ -92,7 +92,7 @@ pipeline {
             steps {
                 sh '''#!/bin/bash
                 echo "Waiting for application to start..."
-                sleep 10  # Ждем некоторое время для старта приложения
+                sleep 10  // Ждем некоторое время для старта приложения
                 echo "Checking application at http://localhost:8080"
                 curl -v http://localhost:8080 || echo "Application check failed!"
                 '''
