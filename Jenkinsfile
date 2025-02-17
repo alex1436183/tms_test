@@ -2,8 +2,8 @@ pipeline {
     agent { label 'minion' }
 
     environment {
-        REPO_URL = 'https://github.com/alex1436183/tms_test.git'
-        BRANCH_NAME = 'main'
+        REPO_URL = 'https://github.com/alex1436183/tms_test.git'  // URL репозитория
+        BRANCH_NAME = 'main'  // Ветка репозитория
         VENV_DIR = 'venv'  // Путь к виртуальному окружению
         DEPLOY_DIR = '/var/www/myapp'  // Путь для деплоя
         DEPLOY_SERVER = 'minion'  // Имя или адрес сервера
@@ -13,9 +13,9 @@ pipeline {
     stages {
         stage('Clone repository') {
             steps {
-                cleanWs()
+                cleanWs()  // Очищаем рабочее пространство
                 echo "Cloning repository from ${REPO_URL}"
-                git branch: "${BRANCH_NAME}", url: "${REPO_URL}"
+                git branch: "${BRANCH_NAME}", url: "${REPO_URL}"  // Клонируем репозиторий
             }
         }
 
@@ -23,14 +23,14 @@ pipeline {
             steps {
                 sh '''#!/bin/bash
                 echo "Setting up Python virtual environment..."
-                python3 -m venv ${VENV_DIR}
-                source ${VENV_DIR}/bin/activate
-                python --version
-                pip install --upgrade pip
+                python3 -m venv ${VENV_DIR}  // Создаём виртуальное окружение
+                source ${VENV_DIR}/bin/activate  // Активируем виртуальное окружение
+                python --version  // Проверяем версию Python
+                pip install --upgrade pip  // Обновляем pip
                 echo "Installing Flask..."
-                pip install Flask  # Устанавливаем Flask
+                pip install Flask  // Устанавливаем Flask
                 echo "Installing pytest..."
-                pip install pytest  # Устанавливаем pytest
+                pip install pytest  // Устанавливаем pytest
                 echo "Python environment setup completed!"
                 '''
             }
@@ -40,8 +40,8 @@ pipeline {
             steps {
                 sh '''#!/bin/bash
                 echo "Running tests..."
-                source ${VENV_DIR}/bin/activate
-                pytest tests/ --maxfail=1 --disable-warnings || echo "Tests failed!"
+                source ${VENV_DIR}/bin/activate  // Активируем виртуальное окружение
+                pytest tests/ --maxfail=1 --disable-warnings || echo "Tests failed!"  // Запускаем тесты
                 echo "Tests completed."
                 '''
             }
@@ -52,7 +52,7 @@ pipeline {
                 withCredentials([sshUserPrivateKey(credentialsId: 'agent-ssh-key', keyFileVariable: 'SSH_KEY')]) {
                     sh '''#!/bin/bash
                     echo "Creating deployment directory on the minion server..."
-                    ssh -i "$SSH_KEY" jenkins@${DEPLOY_SERVER} "mkdir -p ${DEPLOY_DIR}"
+                    ssh -i "$SSH_KEY" jenkins@${DEPLOY_SERVER} "mkdir -p ${DEPLOY_DIR}"  // Создаём папку для деплоя
                     echo "Deployment directory created at ${DEPLOY_DIR}"
                     '''
                 }
@@ -82,7 +82,7 @@ pipeline {
                         export VENV_DIR=${VENV_DIR} && 
                         cd ${DEPLOY_DIR} && 
                         source ${VENV_DIR}/bin/activate && 
-                        python start_app.py"
+                        python ${DEPLOY_DIR}/start_app.py"  // Запускаем приложение
                     echo "Application started on ${DEPLOY_SERVER}."
                     '''
                 }
@@ -93,7 +93,7 @@ pipeline {
             steps {
                 sh '''#!/bin/bash
                 echo "Waiting for application to start..."
-                sleep 10  # Подождать некоторое время для запуска приложения
+                sleep 10  # Ждем некоторое время для старта приложения
                 echo "Checking application at http://localhost:8080"
                 curl -v http://localhost:8080 || echo "Application check failed!"
                 '''
@@ -105,11 +105,13 @@ pipeline {
         always {
             sh '''#!/bin/bash
             echo "Cleaning up..."
+            # Останавливаем приложение, если оно было запущено
             if [ -f ${DEPLOY_DIR}/app.pid ]; then
                 echo "Stopping application (PID: $(cat ${DEPLOY_DIR}/app.pid))"
                 kill $(cat ${DEPLOY_DIR}/app.pid) || true
                 rm -f ${DEPLOY_DIR}/app.pid
             fi
+            # Убираем виртуальное окружение
             echo "Cleaning up virtual environment..."
             rm -rf ${VENV_DIR}
             '''
