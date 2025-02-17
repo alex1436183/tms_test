@@ -24,9 +24,10 @@ pipeline {
                 source ${VENV_DIR}/bin/activate
                 python --version
                 pip install --upgrade pip
-                pip install -r requirements.txt  # Установка зависимостей из файла, если он есть
                 echo "Installing Flask..."
-                pip install Flask  # Устанавливаем Flask, если он не в requirements.txt
+                pip install Flask  # Устанавливаем Flask
+                echo "Installing pytest..."
+                pip install pytest  # Устанавливаем pytest
                 echo "Python environment setup completed!"
                 '''
             }
