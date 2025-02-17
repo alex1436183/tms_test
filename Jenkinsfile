@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'minion' }  // Выполняем на агенте с меткой 'minion'
+    agent { label 'minion' }
 
     environment {
         REPO_URL = 'https://github.com/alex1436183/tms_test.git'
@@ -16,7 +16,7 @@ pipeline {
         
         stage('Setup Python Environment') {
             steps {
-                sh '''
+                sh '''#!/bin/bash
                 python3 -m venv ${VENV_DIR}
                 source ${VENV_DIR}/bin/activate
                 pip install --upgrade pip
@@ -27,7 +27,7 @@ pipeline {
 
         stage('Run Tests') {
             steps {
-                sh '''
+                sh '''#!/bin/bash
                 source ${VENV_DIR}/bin/activate
                 pytest tests/ --maxfail=1 --disable-warnings
                 '''
@@ -36,7 +36,7 @@ pipeline {
 
         stage('Start Application') {
             steps {
-                sh '''
+                sh '''#!/bin/bash
                 source ${VENV_DIR}/bin/activate
                 nohup python app.py > app.log 2>&1 &
                 echo $! > app.pid
@@ -56,7 +56,7 @@ pipeline {
 
     post {
         always {
-            sh '''
+            sh '''#!/bin/bash
             if [ -f app.pid ]; then
                 kill $(cat app.pid) || true
                 rm -f app.pid
