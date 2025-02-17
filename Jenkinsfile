@@ -24,7 +24,7 @@ pipeline {
                 sh '''#!/bin/bash
                 echo "Setting up Python virtual environment..."
                 python3 -m venv ${VENV_DIR}  // Создаём виртуальное окружение
-                . ${VENV_DIR}/bin/activate  // Активируем виртуальное окружение с помощью точки
+                . ${VENV_DIR}/bin/activate  // Активируем виртуальное окружение
                 python --version  // Проверяем версию Python
                 pip install --upgrade pip  // Обновляем pip
                 echo "Installing Flask..."
@@ -81,8 +81,7 @@ pipeline {
                         export DEPLOY_DIR=${DEPLOY_DIR} && 
                         export VENV_DIR=${VENV_DIR} && 
                         cd ${DEPLOY_DIR} && 
-                        . ${VENV_DIR}/bin/activate &&  # Используем точку вместо source для активации виртуального окружения
-                        python ${DEPLOY_DIR}/start_app.py"  // Запускаем приложение
+                        bash -c 'source ${VENV_DIR}/bin/activate && python ${DEPLOY_DIR}/start_app.py'"  // Используем bash для активации виртуального окружения
                     echo "Application started on ${DEPLOY_SERVER}."
                     '''
                 }
