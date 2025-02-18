@@ -4,14 +4,14 @@ pipeline {
     environment {
         REPO_URL = 'https://github.com/alex1436183/tms_test.git'
         BRANCH_NAME = 'main'
-        VENV_DIR = 'venv'
-        DEPLOY_DIR = '/var/www/myapp'
-        DEPLOY_SERVER = 'minion'
-        SSH_CREDENTIALS_ID = 'agent-ssh-key'
+        VENV_DIR = '/var/www/myapp/venv'  // Абсолютный путь к виртуальному окружению
+        DEPLOY_DIR = '/var/www/myapp'  // Директория деплоя
+        DEPLOY_SERVER = 'minion'  // Сервер деплоя
+        SSH_CREDENTIALS_ID = 'agent-ssh-key'  // Jenkins SSH Credentials
     }
 
     stages {
-        stage('Clone repository') {
+        stage('Clone Repository') {
             steps {
                 cleanWs()
                 echo "Cloning repository from ${REPO_URL}"
@@ -25,12 +25,8 @@ pipeline {
                 echo "Setting up Python virtual environment..."
                 python3 -m venv ${VENV_DIR}
                 source ${VENV_DIR}/bin/activate
-                python --version
                 pip install --upgrade pip
-                echo "Installing Flask..."
-                pip install Flask
-                echo "Installing pytest..."
-                pip install pytest
+                pip install -r requirements.txt  # Устанавливаем зависимости из файла
                 echo "Python environment setup completed!"
                 '''
             }
@@ -49,9 +45,9 @@ pipeline {
 
         stage('Create Directory for Deployment') {
             steps {
-                withCredentials([sshUserPrivateKey(credentialsId: 'agent-ssh-key', keyFileVariable: 'SSH_KEY')]) {
+                withCredentials([sshUserPrivateKey(credentialsId: SSH_CREDENTIALS_ID, keyFileVariable: 'SSH_KEY')]) {
                     sh '''#!/bin/bash
-                    echo "Creating deployment directory on the minion server..."
+                    echo "Creating deployment directory on the server..."
                     ssh -i "$SSH_KEY" jenkins@${DEPLOY_SERVER} "mkdir -p ${DEPLOY_DIR}"
                     echo "Deployment directory created at ${DEPLOY_DIR}"
                     '''
@@ -61,10 +57,10 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                withCredentials([sshUserPrivateKey(credentialsId: 'agent-ssh-key', keyFileVariable: 'SSH_KEY')]) {
+                withCredentials([sshUserPrivateKey(credentialsId: SSH_CREDENTIALS_ID, keyFileVariable: 'SSH_KEY')]) {
                     sh '''#!/bin/bash
                     echo "Deploying project files to ${DEPLOY_SERVER}..."
-                    scp -i "$SSH_KEY" -r * jenkins@${DEPLOY_SERVER}:${DEPLOY_DIR}
+                    rsync -avz --exclude 'venv' --exclude '__pycache__' -e "ssh -i $SSH_KEY" . jenkins@${DEPLOY_SERVER}:${DEPLOY_DIR}/
                     echo "Deployment completed!"
                     '''
                 }
@@ -73,15 +69,18 @@ pipeline {
 
         stage('Start Application') {
             steps {
-                withCredentials([sshUserPrivateKey(credentialsId: 'agent-ssh-key', keyFileVariable: 'SSH_KEY')]) {
+                withCredentials([sshUserPrivateKey(credentialsId: SSH_CREDENTIALS_ID, keyFileVariable: 'SSH_KEY')]) {
                     sh '''#!/bin/bash
-                    echo "Running the Python script to start the application on the minion server..."
-                    ssh -i "$SSH_KEY" jenkins@${DEPLOY_SERVER} "
-                        export DEPLOY_DIR=${DEPLOY_DIR} && 
-                        export VENV_DIR=${VENV_DIR} && 
-                        cd ${DEPLOY_DIR} && 
-                        python start_app.py"  # Запускаем скрипт start_app.py для активации виртуального окружения и запуска приложения
-                    echo "Application started on ${DEPLOY_SERVER}."
+                    echo "Running the Python script to start the application on the server..."
+                    ssh -i "$SSH_KEY" jenkins@${DEPLOY_SERVER} "bash -c '
+                        export DEPLOY_DIR=${DEPLOY_DIR}
+                        export VENV_DIR=${VENV_DIR}
+                        cd ${DEPLOY_DIR}
+                        source ${VENV_DIR}/bin/activate
+                        nohup python3 ${DEPLOY_DIR}/start_app.py > ${DEPLOY_DIR}/app.log 2>&1 &
+                        echo $! > ${DEPLOY_DIR}/app.pid
+                        echo "Application started with PID $(cat ${DEPLOY_DIR}/app.pid)"
+                    '"
                     '''
                 }
             }
@@ -91,7 +90,7 @@ pipeline {
             steps {
                 sh '''#!/bin/bash
                 echo "Waiting for application to start..."
-                sleep 10
+                sleep 5
                 echo "Checking application at http://localhost:8080"
                 curl -v http://localhost:8080 || echo "Application check failed!"
                 '''
@@ -108,8 +107,7 @@ pipeline {
                 kill $(cat ${DEPLOY_DIR}/app.pid) || true
                 rm -f ${DEPLOY_DIR}/app.pid
             fi
-            echo "Cleaning up virtual environment..."
-            rm -rf ${VENV_DIR}
+            echo "Cleanup complete!"
             '''
         }
         failure {
