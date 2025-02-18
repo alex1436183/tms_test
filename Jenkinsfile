@@ -39,9 +39,12 @@ pipeline {
                 sh '''#!/bin/bash
                 echo "Running tests..."
                 . ${VENV_DIR}/bin/activate  # Активируем виртуальное окружение (с использованием точки)
-                
+
                 echo "Checking installed packages in the virtual environment..."
                 pip freeze  # Проверяем, что pytest установлен
+
+                echo "Adjusting Python path to include project root directory..."
+                export PYTHONPATH=$PYTHONPATH:$PWD  # Добавляем корневую директорию проекта в путь
 
                 pytest tests/ --maxfail=1 --disable-warnings || { echo "Tests failed!"; exit 1; }  # Запускаем тесты
                 echo "Tests completed."
