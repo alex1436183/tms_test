@@ -63,13 +63,13 @@ pipeline {
             steps {
                 withCredentials([sshUserPrivateKey(credentialsId: 'agent-ssh-key', keyFileVariable: 'SSH_KEY')]) {
                     sh '''#!/bin/bash
-                    echo "Running the Python script to start the application on the minion server..."
+                    echo "Running the start_app script to start the application on the minion server..."
                     ssh -i "$SSH_KEY" jenkins@${DEPLOY_SERVER} "bash -c \"
                         export DEPLOY_DIR=${DEPLOY_DIR} && 
                         export VENV_DIR=${VENV_DIR} && 
                         cd ${DEPLOY_DIR} && 
-                        echo 'Starting the application...' &&
-                        nohup python3 start_app.py > ${DEPLOY_DIR}/app.log 2>&1 & 
+                        echo 'Running start_app script...' &&
+                        nohup bash ${DEPLOY_DIR}/start_app.sh > ${DEPLOY_DIR}/app.log 2>&1 & 
                         echo $! > ${DEPLOY_DIR}/app.pid &&
                         echo 'Application started with PID $(cat ${DEPLOY_DIR}/app.pid)' && 
                         tail -n 10 ${DEPLOY_DIR}/app.log
@@ -84,13 +84,9 @@ pipeline {
         always {
             sh '''#!/bin/bash
             echo "Cleaning up..."
-            if [ -f app.pid ]; then
-                echo "Stopping application (PID: $(cat app.pid))"
-                kill $(cat app.pid) || true
-                rm -f app.pid
-            fi
-            echo "Cleaning up virtual environment..."
-            rm -rf ${VENV_DIR}
+            # Очистка виртуального окружения отключена, чтобы приложение продолжало работать
+            echo "Cleaning up virtual environment..." 
+            # Виртуальное окружение оставляем нетронутым
             '''
         }
         failure {
