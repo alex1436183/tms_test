@@ -28,7 +28,7 @@ pipeline {
                 python3 --version  # Проверяем версию Python
                 pip install --upgrade pip  # Обновляем pip
                 echo "Installing dependencies..."
-                pip install -r requirements.txt  # Устанавливаем зависимости
+                pip install pytest  # Устанавливаем pytest вручную (так как у нас нет requirements.txt)
                 echo "Python environment setup completed!"
                 '''
             }
@@ -39,6 +39,10 @@ pipeline {
                 sh '''#!/bin/bash
                 echo "Running tests..."
                 . ${VENV_DIR}/bin/activate  # Активируем виртуальное окружение (с использованием точки)
+                
+                echo "Checking installed packages in the virtual environment..."
+                pip freeze  # Проверяем, что pytest установлен
+
                 pytest tests/ --maxfail=1 --disable-warnings || { echo "Tests failed!"; exit 1; }  # Запускаем тесты
                 echo "Tests completed."
                 '''
