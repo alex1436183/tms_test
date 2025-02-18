@@ -5,7 +5,7 @@ pipeline {
         REPO_URL = 'https://github.com/alex1436183/tms_test.git'
         BRANCH_NAME = 'main'
         VENV_DIR = 'venv'
-        DEPLOY_SERVER = 'your.server.address'  // Укажи свой сервер
+        DEPLOY_SERVER = 'minion'  // Имя хоста сервера
         DEPLOY_DIR = '/var/www/myapp'  // Установлен путь к директории деплоя
     }
 
