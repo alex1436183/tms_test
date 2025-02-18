@@ -5,6 +5,8 @@ pipeline {
         REPO_URL = 'https://github.com/alex1436183/tms_test.git'
         BRANCH_NAME = 'main'
         VENV_DIR = 'venv'
+        DEPLOY_SERVER = 'your.server.address'  // Укажи свой сервер
+        DEPLOY_DIR = '/var/www/myapp'  // Установлен путь к директории деплоя
     }
 
     stages {
@@ -25,9 +27,9 @@ pipeline {
                 python --version
                 pip install --upgrade pip
                 echo "Installing Flask..."
-                pip install Flask  # Устанавливаем Flask
+                pip install Flask
                 echo "Installing pytest..."
-                pip install pytest  # Устанавливаем pytest
+                pip install pytest
                 echo "Python environment setup completed!"
                 '''
             }
@@ -44,26 +46,32 @@ pipeline {
             }
         }
 
-        stage('Start Application') {
+        stage('Deploy to Server') {
             steps {
-                sh '''#!/bin/bash
-                echo "Starting application..."
-                source ${VENV_DIR}/bin/activate
-                nohup python app.py > app.log 2>&1 &
-                echo $! > app.pid
-                echo "Application started with PID: $(cat app.pid)"
-                '''
+                withCredentials([sshUserPrivateKey(credentialsId: 'agent-ssh-key', keyFileVariable: 'SSH_KEY')]) {
+                    sh '''#!/bin/bash
+                    echo "Deploying project files to ${DEPLOY_SERVER}..."
+                    ssh -i "$SSH_KEY" jenkins@${DEPLOY_SERVER} "mkdir -p ${DEPLOY_DIR}"
+                    rsync -avz -e "ssh -i $SSH_KEY" . jenkins@${DEPLOY_SERVER}:${DEPLOY_DIR}/
+                    echo "Deployment completed!"
+                    '''
+                }
             }
         }
 
-        stage('Check Application') {
+        stage('Start Application') {
             steps {
-                sh '''#!/bin/bash
-                echo "Waiting for application to start..."
-                sleep 10  # Увеличиваем время ожидания для запуска приложения
-                echo "Checking application at http://localhost:8080"
-                curl -v http://localhost:8080 || echo "Application check failed!"
-                '''
+                withCredentials([sshUserPrivateKey(credentialsId: 'agent-ssh-key', keyFileVariable: 'SSH_KEY')]) {
+                    sh '''#!/bin/bash
+                    echo "Running the Python script to start the application on the minion server..."
+                    ssh -i "$SSH_KEY" jenkins@${DEPLOY_SERVER} "bash -c '
+                        export DEPLOY_DIR=${DEPLOY_DIR} && 
+                        export VENV_DIR=${VENV_DIR} && 
+                        cd ${DEPLOY_DIR} && 
+                        nohup python3 start_app.py > ${DEPLOY_DIR}/app.log 2>&1 & echo $! > ${DEPLOY_DIR}/app.pid
+                        echo "Application started with PID $(cat ${DEPLOY_DIR}/app.pid)" '"
+                    '''
+                }
             }
         }
     }
