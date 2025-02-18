@@ -13,7 +13,7 @@ def start_application():
 
     # Путь к активации виртуального окружения и запуску приложения
     activate_venv = os.path.join(venv_dir, 'bin', 'activate')
-    app_command = f"python3 {os.path.join(deploy_dir, 'app.py')}"
+    app_command = f"python3 {os.path.join(deploy_dir, 'start_app.py')}"
 
     try:
         # Используем точку (.) вместо source, чтобы избежать ошибки в sh
