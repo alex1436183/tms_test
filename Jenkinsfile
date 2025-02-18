@@ -24,11 +24,9 @@ pipeline {
                 sh '''#!/bin/bash
                 echo "Setting up Python virtual environment..."
                 python3 -m venv ${VENV_DIR}  # Создаём виртуальное окружение
-                . ${VENV_DIR}/bin/activate  # Активируем виртуальное окружение (с использованием точки)
+                source ${VENV_DIR}/bin/activate  # Активируем виртуальное окружение
                 python3 --version  # Проверяем версию Python
                 pip install --upgrade pip  # Обновляем pip
-                echo "Installing dependencies..."
-                pip install pytest  # Устанавливаем pytest вручную (так как у нас нет requirements.txt)
                 echo "Python environment setup completed!"
                 '''
             }
@@ -38,15 +36,20 @@ pipeline {
             steps {
                 sh '''#!/bin/bash
                 echo "Running tests..."
-                . ${VENV_DIR}/bin/activate  # Активируем виртуальное окружение (с использованием точки)
 
-                echo "Checking installed packages in the virtual environment..."
-                pip freeze  # Проверяем, что pytest установлен
+                # Активируем виртуальное окружение
+                source ${VENV_DIR}/bin/activate
 
-                echo "Adjusting Python path to include project root directory..."
-                export PYTHONPATH=$PYTHONPATH:$PWD  # Добавляем корневую директорию проекта в путь
+                # Добавляем корневую директорию в PYTHONPATH, чтобы корректно работали импорты
+                export PYTHONPATH=$PYTHONPATH:$PWD
 
-                pytest tests/ --maxfail=1 --disable-warnings || { echo "Tests failed!"; exit 1; }  # Запускаем тесты
+                # Проверим, что pytest установлен
+                echo "Checking installed packages..."
+                pip freeze
+
+                # Запускаем тесты
+                pytest tests/ --maxfail=1 --disable-warnings || { echo "Tests failed!"; exit 1; }
+
                 echo "Tests completed."
                 '''
             }
@@ -69,14 +72,13 @@ pipeline {
             steps {
                 withCredentials([sshUserPrivateKey(credentialsId: 'agent-ssh-key', keyFileVariable: 'SSH_KEY')]) {
                     sh '''#!/bin/bash
-                    echo "Starting the application on the minion server..."
+                    echo "Running the Python script to start the application on the minion server..."
                     ssh -i "$SSH_KEY" jenkins@${DEPLOY_SERVER} "bash -c '
                         export DEPLOY_DIR=${DEPLOY_DIR} && 
                         export VENV_DIR=${VENV_DIR} && 
                         cd ${DEPLOY_DIR} && 
-                        . ${VENV_DIR}/bin/activate && 
-                        nohup python3 start_app.py > ${DEPLOY_DIR}/app.log 2>&1 & 
-                        echo \"Application started with PID $(cat ${DEPLOY_DIR}/app.pid)\" '"
+                        nohup python3 start_app.py > ${DEPLOY_DIR}/app.log 2>&1 & echo $! > ${DEPLOY_DIR}/app.pid
+                        echo "Application started with PID $(cat ${DEPLOY_DIR}/app.pid)" '"
                     '''
                 }
             }
