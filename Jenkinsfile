@@ -68,8 +68,12 @@ pipeline {
                         export DEPLOY_DIR=${DEPLOY_DIR} && 
                         export VENV_DIR=${VENV_DIR} && 
                         cd ${DEPLOY_DIR} && 
-                        nohup python3 start_app.py > ${DEPLOY_DIR}/app.log 2>&1 & echo $! > ${DEPLOY_DIR}/app.pid
-                        echo "Application started with PID $(cat ${DEPLOY_DIR}/app.pid)" '"
+                        echo "Starting the application..." &&
+                        nohup python3 start_app.py > ${DEPLOY_DIR}/app.log 2>&1 & 
+                        echo $! > ${DEPLOY_DIR}/app.pid &&
+                        echo "Application started with PID $(cat ${DEPLOY_DIR}/app.pid)" && 
+                        tail -n 10 ${DEPLOY_DIR}/app.log'
+                    '"
                     '''
                 }
             }
