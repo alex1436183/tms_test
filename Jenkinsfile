@@ -64,16 +64,16 @@ pipeline {
                 withCredentials([sshUserPrivateKey(credentialsId: 'agent-ssh-key', keyFileVariable: 'SSH_KEY')]) {
                     sh '''#!/bin/bash
                     echo "Running the Python script to start the application on the minion server..."
-                    ssh -i "$SSH_KEY" jenkins@${DEPLOY_SERVER} "bash -c '
+                    ssh -i "$SSH_KEY" jenkins@${DEPLOY_SERVER} "bash -c \"
                         export DEPLOY_DIR=${DEPLOY_DIR} && 
                         export VENV_DIR=${VENV_DIR} && 
                         cd ${DEPLOY_DIR} && 
-                        echo "Starting the application..." &&
+                        echo 'Starting the application...' &&
                         nohup python3 start_app.py > ${DEPLOY_DIR}/app.log 2>&1 & 
                         echo $! > ${DEPLOY_DIR}/app.pid &&
-                        echo "Application started with PID $(cat ${DEPLOY_DIR}/app.pid)" && 
-                        tail -n 10 ${DEPLOY_DIR}/app.log'
-                    '"
+                        echo 'Application started with PID $(cat ${DEPLOY_DIR}/app.pid)' && 
+                        tail -n 10 ${DEPLOY_DIR}/app.log
+                    \""
                     '''
                 }
             }
