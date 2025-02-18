@@ -11,13 +11,13 @@ def start_application():
         print("Error: DEPLOY_DIR or VENV_DIR is not set.")
         sys.exit(1)
 
-    # Путь к активации виртуального окружения и запуску приложения
-    activate_venv = os.path.join(venv_dir, 'bin', 'activate')
-    app_command = f"python3 {os.path.join(deploy_dir, 'start_app.py')}"
+    # Путь к интерпретатору виртуального окружения
+    python_executable = os.path.join(venv_dir, 'bin', 'python3')
+    app_command = f"{python_executable} {os.path.join(deploy_dir, 'start_app.py')}"
 
     try:
-        # Используем точку (.) вместо source, чтобы избежать ошибки в sh
-        subprocess.run(f". {activate_venv} && {app_command}", shell=True, cwd=deploy_dir, executable="/bin/bash", check=True)
+        # Запуск приложения через subprocess, без активации виртуального окружения
+        subprocess.run(app_command, shell=True, cwd=deploy_dir, executable="/bin/bash", check=True)
         print(f"✅ Application started in the background at {deploy_dir}")
     except subprocess.CalledProcessError as e:
         print(f"❌ Error starting the application: {e}")
