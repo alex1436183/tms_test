@@ -69,6 +69,7 @@ pipeline {
                         export VENV_DIR=${VENV_DIR} && 
                         cd ${DEPLOY_DIR} && 
                         echo \"Running start_app script...\" &&
+                        source ${VENV_DIR}/bin/activate &&  # Активируем виртуальное окружение
                         nohup bash ${DEPLOY_DIR}/start_app.sh > ${DEPLOY_DIR}/app.log 2>&1 & 
                         echo $! > ${DEPLOY_DIR}/app.pid &&
                         echo \"Application started with PID $(cat ${DEPLOY_DIR}/app.pid)\" &&
