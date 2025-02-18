@@ -65,4 +65,52 @@ pipeline {
                     ssh -i "$SSH_KEY" jenkins@${DEPLOY_SERVER} "mkdir -p ${DEPLOY_DIR}"
                     rsync -avz -e "ssh -i $SSH_KEY" . jenkins@${DEPLOY_SERVER}:${DEPLOY_DIR}/
                     echo "Deployment completed!"
-          
+                    '''
+                }
+            }
+        }
+
+        stage('Start Application') {
+            steps {
+                withCredentials([sshUserPrivateKey(credentialsId: 'agent-ssh-key', keyFileVariable: 'SSH_KEY')]) {
+                    sh '''#!/bin/bash
+                    echo "Running the Python script to start the application on the minion server..."
+                    ssh -i "$SSH_KEY" jenkins@${DEPLOY_SERVER} "bash -c '
+                        export DEPLOY_DIR=${DEPLOY_DIR} && 
+                        export VENV_DIR=${VENV_DIR} && 
+                        cd ${DEPLOY_DIR} && 
+                        nohup python3 start_app.py > ${DEPLOY_DIR}/app.log 2>&1 & echo $! > ${DEPLOY_DIR}/app.pid
+                        echo "Application started with PID $(cat ${DEPLOY_DIR}/app.pid)" '"
+                    '''
+                }
+            }
+        }
+
+        stage('Check Application') {
+            steps {
+                sh '''#!/bin/bash
+                echo "Waiting for application to start..."
+                sleep 10  # Ждем некоторое время для старта приложения
+                echo "Checking application at http://localhost:8080"
+                curl -v http://localhost:8080 || echo "Application check failed!"
+                '''
+            }
+        }
+    }
+
+    post {
+        always {
+            sh '''#!/bin/bash
+            echo "Cleaning up..."
+            # Убираем виртуальное окружение
+            rm -rf ${VENV_DIR}
+            '''
+        }
+        failure {
+            echo '❌ Pipeline failed! Check logs for details.'
+        }
+        success {
+            echo '✅ Pipeline completed successfully!'
+        }
+    }
+}
