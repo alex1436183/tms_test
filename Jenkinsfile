@@ -24,7 +24,7 @@ pipeline {
                 sh '''#!/bin/bash
                 echo "Setting up Python virtual environment..."
                 python3 -m venv ${VENV_DIR}  # Создаём виртуальное окружение
-                source ${VENV_DIR}/bin/activate  # Активируем виртуальное окружение
+                . ${VENV_DIR}/bin/activate  # Активируем виртуальное окружение (с использованием точки)
                 python3 --version  # Проверяем версию Python
                 pip install --upgrade pip  # Обновляем pip
                 echo "Installing dependencies..."
@@ -38,8 +38,8 @@ pipeline {
             steps {
                 sh '''#!/bin/bash
                 echo "Running tests..."
-                source ${VENV_DIR}/bin/activate  # Активируем виртуальное окружение
-                pytest tests/ --maxfail=1 --disable-warnings || echo "Tests failed!"  # Запускаем тесты
+                . ${VENV_DIR}/bin/activate  # Активируем виртуальное окружение (с использованием точки)
+                pytest tests/ --maxfail=1 --disable-warnings || { echo "Tests failed!"; exit 1; }  # Запускаем тесты
                 echo "Tests completed."
                 '''
             }
@@ -62,13 +62,14 @@ pipeline {
             steps {
                 withCredentials([sshUserPrivateKey(credentialsId: 'agent-ssh-key', keyFileVariable: 'SSH_KEY')]) {
                     sh '''#!/bin/bash
-                    echo "Running the Python script to start the application on the minion server..."
+                    echo "Starting the application on the minion server..."
                     ssh -i "$SSH_KEY" jenkins@${DEPLOY_SERVER} "bash -c '
                         export DEPLOY_DIR=${DEPLOY_DIR} && 
                         export VENV_DIR=${VENV_DIR} && 
                         cd ${DEPLOY_DIR} && 
-                        nohup python3 start_app.py > ${DEPLOY_DIR}/app.log 2>&1 & echo $! > ${DEPLOY_DIR}/app.pid
-                        echo "Application started with PID $(cat ${DEPLOY_DIR}/app.pid)" '"
+                        . ${VENV_DIR}/bin/activate && 
+                        nohup python3 start_app.py > ${DEPLOY_DIR}/app.log 2>&1 & 
+                        echo \"Application started with PID $(cat ${DEPLOY_DIR}/app.pid)\" '"
                     '''
                 }
             }
