@@ -13,14 +13,14 @@ def start_application():
 
     # Путь к активации виртуального окружения и запуску приложения
     activate_venv = os.path.join(venv_dir, 'bin', 'activate')
-    app_command = f"python {os.path.join(deploy_dir, 'app.py')}"
+    app_command = f"python3 {os.path.join(deploy_dir, 'app.py')}"
 
     try:
-        # Активация виртуального окружения и запуск приложения
-        subprocess.run(f"source {activate_venv} && {app_command}", shell=True, cwd=deploy_dir, check=True)
-        print(f"Application started in the background at {deploy_dir}")
+        # Используем точку (.) вместо source, чтобы избежать ошибки в sh
+        subprocess.run(f". {activate_venv} && {app_command}", shell=True, cwd=deploy_dir, executable="/bin/bash", check=True)
+        print(f"✅ Application started in the background at {deploy_dir}")
     except subprocess.CalledProcessError as e:
-        print(f"Error starting the application: {e}")
+        print(f"❌ Error starting the application: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":
